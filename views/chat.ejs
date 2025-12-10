@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Messages</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+
+  <body class="bg-zinc-900 text-white">
+    <div class="flex h-screen">
+      <!-- Sidebar -->
+      <div class="w-1/3 border-r border-zinc-700 p-4 flex flex-col">
+        <h2 class="text-xl font-semibold mb-4">Messages</h2>
+        <input
+          type="text"
+          placeholder="Search..."
+          class="w-full p-2 rounded bg-zinc-800 text-gray-300 outline-none"
+        />
+        <div class="mt-4 flex-1 overflow-y-auto space-y-2">
+          <% allUsers.forEach(function(u){ %>
+            <% if(u._id.toString() !== user.userid){ %>
+              <div
+                onclick="selectUser('<%= u._id %>', '<%= u.username %>')"
+                class="p-3 bg-zinc-800 rounded-lg cursor-pointer hover:bg-zinc-700"
+              >
+                <p class="font-semibold"><%= u.username %></p>
+              </div>
+            <% } %>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Chat window -->
+      <div class="flex-1 flex flex-col justify-between p-5">
+        <div class="border-b border-zinc-700 pb-2 mb-3">
+          <h2 id="chatWith" class="text-lg font-semibold text-gray-300">
+            Select a user to start chat
+          </h2>
+        </div>
+
+        <div
+          id="messages"
+          class="flex-1 overflow-y-auto space-y-2 px-2 scrollbar-hide"
+        ></div>
+
+        <form id="chatForm" class="flex mt-4 hidden">
+          <input
+            id="msgInput"
+            type="text"
+            placeholder="Type a message..."
+            autocomplete="off"
+            class="flex-1 p-2 rounded-l bg-zinc-800 text-gray-300 outline-none"
+          />
+          <button
+            type="submit"
+            class="px-4 bg-blue-600 rounded-r hover:bg-blue-700"
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const token = "<%= token %>";
+      const socket = io({ auth: { token } });
+
+      let selectedUser = null;
+
+      function selectUser(id, name) {
+        selectedUser = id;
+        document.getElementById("chatWith").innerText = "Chatting with " + name;
+        document.getElementById("chatForm").classList.remove("hidden");
+        document.getElementById("messages").innerHTML = "";
+      }
+
+      const form = document.getElementById("chatForm");
+      const input = document.getElementById("msgInput");
+      const messages = document.getElementById("messages");
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (input.value.trim() && selectedUser) {
+          socket.emit("private-message", {
+            to: selectedUser,
+            message: input.value,
+          });
+
+          const div = document.createElement("div");
+          div.className =
+            "p-2 bg-blue-600 rounded-lg max-w-max ml-auto text-sm";
+          div.textContent = input.value;
+          messages.appendChild(div);
+          messages.scrollTop = messages.scrollHeight;
+
+          input.value = "";
+        }
+      });
+
+      socket.on("receive-message", (data) => {
+        const div = document.createElement("div");
+        div.className =
+          "p-2 bg-zinc-700 rounded-lg max-w-max text-sm text-gray-100";
+        div.textContent = data.message;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+      });
+    </script>
+  </body>
+</html>

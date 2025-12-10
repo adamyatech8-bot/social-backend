@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stories</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+
+<body class="bg-black text-white">
+
+  <!-- Header -->
+  <header class="w-full flex justify-between items-center p-4 border-b border-zinc-700 bg-zinc-900 sticky top-0 z-30">
+    <div class="flex items-center gap-3">
+      <a href="/home" class="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium">🏠 Home</a>
+      <h1 class="text-xl font-semibold">Stories</h1>
+    </div>
+    <a href="/upload/story" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-md text-sm font-semibold">+ Add Story</a>
+  </header>
+
+  <!-- Story preview bar -->
+  <% if (!stories || stories.length === 0) { %>
+    <div class="w-full py-4 px-4 bg-zinc-900 border-b border-zinc-800 text-zinc-400 text-center">
+      No stories yet 😔
+    </div>
+  <% } else { %>
+    <div class="w-full overflow-x-auto no-scrollbar py-4 px-3 bg-zinc-900 border-b border-zinc-800 z-20">
+      <div class="flex gap-6 items-center">
+        <% for (let i = 0; i < stories.length; i++) {
+             const story = stories[i];
+             const filepath = story && story.filepath ? String(story.filepath) : "";
+             const isVideo = /\.(mp4|webm|mov|mkv)$/i.test(filepath);
+        %>
+          <div class="flex flex-col items-center text-center">
+            <button
+              class="flex flex-col items-center focus:outline-none story-circle"
+              type="button"
+              data-index="<%= i %>"
+            >
+              <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-pink-500">
+                <% if (isVideo) { %>
+                  <video src="<%= filepath %>" muted loop playsinline class="object-cover w-full h-full preview-thumb"></video>
+                <% } else { %>
+                  <img src="<%= filepath %>" class="object-cover w-full h-full" alt="Story thumbnail" />
+                <% } %>
+              </div>
+              <p class="text-xs mt-1 text-zinc-300 truncate w-16">@<%= (story.user && story.user.username) ? story.user.username : 'user' %></p>
+            </button>
+
+            <!-- Delete Story Button -->
+            <button 
+              data-id="<%= story._id %>"
+              class="mt-2 bg-red-600 hover:bg-red-500 text-white text-xs px-2 py-1 rounded delete-story-btn">
+              🗑 Delete
+            </button>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Fullscreen Story Viewer (hidden initially) -->
+  <div id="storyOverlay" class="fixed inset-0 bg-black/95 flex justify-center items-center z-50 hidden">
+    <div class="relative w-full h-full flex justify-center items-center">
+      <button id="closeStory" class="absolute top-5 right-5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl">✕</button>
+      <button id="prevStory" class="absolute left-5 text-3xl text-white font-bold">⟨</button>
+      <div id="storyContent" class="max-w-[90%] max-h-[90%] flex justify-center items-center"></div>
+      <button id="nextStory" class="absolute right-5 text-3xl text-white font-bold">⟩</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const storyCircles = document.querySelectorAll(".story-circle");
+      const overlay = document.getElementById("storyOverlay");
+      const content = document.getElementById("storyContent");
+      const closeBtn = document.getElementById("closeStory");
+      const nextBtn = document.getElementById("nextStory");
+      const prevBtn = document.getElementById("prevStory");
+
+      const stories = JSON.parse('<%- JSON.stringify(stories) %>');
+      let currentIndex = 0;
+      let autoTimer = null;
+
+      // Play preview videos in circles
+      document.querySelectorAll(".preview-thumb").forEach(v => {
+        v.muted = true;
+        v.play().catch(() => {});
+      });
+
+      function showStory(index) {
+        if (index < 0 || index >= stories.length) return;
+        currentIndex = index;
+
+        const s = stories[index];
+        const fp = s.filepath || "";
+        const isVideo = /\.(mp4|webm|mov|mkv)$/i.test(fp);
+
+        content.innerHTML = isVideo
+          ? `<video src="${fp}" autoplay muted controls class="max-h-[90vh] rounded-xl shadow-lg"></video>`
+          : `<img src="${fp}" class="max-h-[90vh] rounded-xl shadow-lg" />`;
+
+        overlay.classList.remove("hidden");
+
+        if (autoTimer) clearTimeout(autoTimer);
+        if (isVideo) {
+          const videoEl = content.querySelector("video");
+          videoEl.addEventListener("ended", () => showNext());
+          autoTimer = setTimeout(() => showNext(), 8000);
+        } else {
+          autoTimer = setTimeout(() => showNext(), 5000);
+        }
+      }
+
+      function showNext() {
+        showStory((currentIndex + 1) % stories.length);
+      }
+
+      function showPrev() {
+        showStory((currentIndex - 1 + stories.length) % stories.length);
+      }
+
+      // Open and close story
+      storyCircles.forEach((circle, index) => {
+        circle.addEventListener("click", () => showStory(index));
+      });
+      closeBtn.addEventListener("click", () => {
+        overlay.classList.add("hidden");
+        if (autoTimer) clearTimeout(autoTimer);
+        const vid = content.querySelector("video");
+        if (vid) vid.pause();
+      });
+      nextBtn.addEventListener("click", showNext);
+      prevBtn.addEventListener("click", showPrev);
+
+      // Delete story
+      document.querySelectorAll(".delete-story-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.id;
+          if (!confirm("Are you sure you want to delete this story?")) return;
+
+          try {
+            const res = await fetch(`/story/${id}`, { method: "DELETE" });
+            const data = await res.json();
+            if (data.success) {
+              alert("Story deleted successfully!");
+              location.reload();
+            } else {
+              alert("Failed to delete story.");
+            }
+          } catch (err) {
+            console.error(err);
+            alert("Error deleting story.");
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

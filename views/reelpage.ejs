@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= reel.user ? reel.user.username : "Unknown" %>'s Reel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-900 text-white flex flex-col items-center min-h-screen">
+
+  <div class="w-full max-w-md mt-10">
+    <video src="<%= reel.filepath %>" controls class="w-full rounded-lg shadow-lg"></video>
+    
+    <div class="mt-4">
+      <h2 class="text-xl font-semibold">@<%= reel.user ? reel.user.username : "unknown" %></h2>
+      <p class="text-gray-300 mt-1"><%= reel.caption || "" %></p>
+    </div>
+
+    <div class="mt-4 flex justify-between items-center">
+      <a href="/like/<%= reel._id %>?type=reel" class="text-blue-400">
+        ❤️ Like (<%= reel.likes?.length || 0 %>)
+      </a>
+      <a href="/reels" class="text-gray-400">⬅ Back</a>
+    </div>
+
+    <div class="mt-6" id="comments">
+      <h3 class="font-semibold mb-2">Comments:</h3>
+      <% if (!reel.comments || reel.comments.length === 0) { %>
+        <p class="text-gray-400">No comments yet.</p>
+      <% } %>
+
+      <% (reel.comments || []).forEach(c => { %>
+        <div class="border-b border-gray-700 py-2">
+          <p class="text-sm">
+            <span class="font-semibold">@<%= c.user ? c.user.username : 'unknown' %></span>: <%= c.text %>
+          </p>
+        </div>
+      <% }) %>
+
+      <form action="/reel/comment/<%= reel._id %>" method="POST" class="mt-4 flex">
+        <input name="text" type="text" placeholder="Add a comment..." class="flex-grow p-2 bg-zinc-800 rounded-l-md outline-none" required>
+        <button type="submit" class="bg-blue-500 px-4 rounded-r-md">Send</button>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>

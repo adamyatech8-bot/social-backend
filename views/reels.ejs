@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reels 🎥</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="bg-black text-white overflow-hidden">
+    <!-- Header -->
+    <header class="absolute top-0 left-0 w-full flex justify-between items-center px-6 py-4 z-20">
+      <a href="/home" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md font-semibold">🏠 Home</a>
+      <h1 class="text-2xl font-bold">Reels 🎬</h1>
+      <a href="/upload/video" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md font-semibold">⬆ Upload</a>
+    </header>
+
+    <!-- Reels feed -->
+    <main class="h-screen overflow-y-scroll snap-y snap-mandatory">
+      <% if (!reels || reels.length === 0) { %>
+        <div class="flex flex-col justify-center items-center h-screen text-zinc-400">
+          <p class="text-lg">No reels uploaded yet 😔</p>
+        </div>
+      <% } else { %>
+        <% reels.forEach(reel => { %>
+          <section class="relative h-screen snap-start">
+            <video src="<%= reel.filepath %>" class="w-full h-full object-cover" muted loop playsinline></video>
+
+            <!-- Like, Comment, Share -->
+            <div class="absolute bottom-24 right-4 flex flex-col items-center gap-6">
+              <!-- ❤️ Like -->
+              <a href="/like/<%= reel._id %>?type=reel" class="bg-white/10 hover:bg-white/20 rounded-full p-3 backdrop-blur-md transition-transform transform hover:scale-110 text-center">
+                <span class="text-3xl"><%= reel.likes?.some(l => String(l) === String(user._id)) ? "💔" : "❤️" %></span>
+                <p class="text-xs mt-1 text-center"><%= reel.likes?.length || 0 %></p>
+              </a>
+
+              <!-- 💬 Comment -->
+              <a href="/reel/<%= reel._id %>#comments" class="bg-white/10 hover:bg-white/20 rounded-full p-3 backdrop-blur-md transition-transform transform hover:scale-110 text-center">
+                <span class="text-3xl">💬</span>
+                <p class="text-xs mt-1 text-center"><%= reel.comments?.length || 0 %></p>
+              </a>
+
+              <!-- 📤 Share -->
+              <button class="bg-white/10 hover:bg-white/20 rounded-full p-3 backdrop-blur-md transition-transform transform hover:scale-110" onclick="navigator.share && navigator.share({ title: 'Check this reel!', url: window.location.origin + '/reel/<%= reel._id %>' })">
+                <span class="text-3xl">📤</span>
+              </button>
+            </div>
+
+            <!-- Caption / user info -->
+            <div class="absolute bottom-4 left-4 space-y-1">
+              <p class="font-semibold text-lg">@<%= reel.user ? reel.user.username : 'unknown' %></p>
+              <p class="text-sm text-zinc-300">Uploaded: <%= new Date(reel.createdAt).toLocaleString() %></p>
+              <% if (reel.caption) { %>
+                <p class="text-sm text-white/90"><%= reel.caption %></p>
+              <% } %>
+            </div>
+          </section>
+        <% }) %>
+      <% } %>
+    </main>
+
+    <script>
+      // Auto play when visible
+      const videos = document.querySelectorAll("video");
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.play();
+          else entry.target.pause();
+        });
+      }, { threshold: 0.8 });
+      videos.forEach((video) => observer.observe(video));
+    </script>
+  </body>
+</html>
