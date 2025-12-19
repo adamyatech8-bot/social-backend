@@ -13,15 +13,34 @@
     <a class="text-xl px-2 w-20 inline-block mt-5 ml-10 rounded-md bg-blue-600" href="/home">Home</a>
 
     <!-- Profile info -->
-    <div class="flex items-start gap-2 mt-5">
-      <div class="w-10 h-10 ml-10 rounded-md overflow-hidden">
+    <div class="flex items-start gap-4 mt-5 ml-10">
+      <div class="w-20 h-20 rounded-full overflow-hidden">
         <img class="w-full h-full object-cover" src="/images/uploads/<%= user.profilepic %>" alt="profile">
       </div>
-      <h3 class="text-2xl">Hello, <%= user.name %> 👋</h3>
+      <div>
+        <h3 class="text-2xl font-semibold">Hello, <%= user.name %> 👋</h3>
+        <p class="text-zinc-400 mt-1">Bio.. details about user.</p>
+
+        <!-- Stats -->
+        <div class="flex gap-4 mt-3">
+          <div class="bg-zinc-700 px-3 py-1 rounded-md text-center">
+            <div class="font-semibold"><%= user.posts.length %>k</div>
+            <div>posts</div>
+          </div>
+          <div class="bg-zinc-700 px-3 py-1 rounded-md text-center">
+            <div class="font-semibold"><%= user.followers ? user.followers.length : 0 %></div>
+            <div>follow</div>
+          </div>
+          <div class="bg-zinc-700 px-3 py-1 rounded-md text-center">
+            <div class="font-semibold"><%= user.following ? user.following.length : 0 %></div>
+            <div>followings</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Post form -->
-    <h2 class="px-10 py-2">Now you can create a post</h2>
+    <h2 class="px-10 py-2 mt-5">Now you can create a post</h2>
     <form method="post" action="/uploadpost" enctype="multipart/form-data" class="p-10 space-y-4">
       <h3 class="text-2xl">Create a new post</h3>
 
@@ -43,17 +62,17 @@
           <div class="post mb-4 rounded-md w-1/3 p-3 ml-10 border-2 border-zinc-500">
             <h4 class="text-blue-500 mt-2">@<%= user.username %></h4>
 
-            <!-- ✅ Post image -->
+            <!-- Post image -->
             <% if (post.postpic && post.postpic !== "default.png") { %>
               <div class="w-full h-64 mt-2 rounded-md overflow-hidden">
                 <img src="/images/uploads/<%= post.postpic %>" alt="post image" class="w-full h-full object-cover">
               </div>
             <% } %>
 
-            <!-- ✅ Post content -->
+            <!-- Post content -->
             <p class="tracking-tight mt-2"><%= post.content %></p>
 
-            <!-- ✅ Likes -->
+            <!-- Likes -->
             <small class="mt-1 inline-block"><%= post.likes ? post.likes.length : 0 %> likes</small>
 
             <div class="flex flex-wrap gap-3 mt-2">
@@ -63,7 +82,7 @@
               <a href="/edit/<%= post._id %>">edit</a>
             </div>
 
-            <!-- ✅ Comments list -->
+            <!-- Comments list -->
             <% if (post.comments && post.comments.length > 0) { %>
               <div class="mt-2">
                 <% post.comments.forEach(function(comment) { %>
@@ -74,7 +93,7 @@
               </div>
             <% } %>
 
-            <!-- ✅ Comment form -->
+            <!-- Comment form -->
             <form method="post" action="/comment/<%= post._id %>" class="flex gap-2 mt-2">
               <input type="text" name="content" placeholder="Add a comment..."
                 class="flex-1 p-2 rounded-md bg-zinc-800 border border-zinc-600 text-white" required>
